@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}Kinetic Observatory | Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-12">
+    <section class="glass-card hero-card">
+      <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">
+        <div>
+          <div class="eyebrow">WPL Mini Project</div>
+          <h2 class="section-title">Simple Strategy Backtesting</h2>
+          <p class="section-copy mb-0">
+            Upload OHLCV Excel data, run one strategy at a time, and instantly review profit and trade logs.
+          </p>
+        </div>
+        <div class="chip-cloud">
+          <span class="signal-chip signal-chip-success">Django</span>
+          <span class="signal-chip signal-chip-info">jQuery AJAX</span>
+          <span class="signal-chip signal-chip-warning">Pandas</span>
+          <span class="signal-chip signal-chip-ghost">JSON API</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="glass-card mt-4" id="strategyPanel">
+      <div class="section-head">
+        <div>
+          <h3 class="section-title-sm">Strategy panel</h3>
+          <p class="section-copy small mb-0">Choose one strategy and run a clean, explainable backtest.</p>
+        </div>
+        <div class="dataset-picker">
+          <label class="form-label kinetic-label mb-1">Dataset</label>
+          <select id="backtestDatasetSelect" class="form-select kinetic-input">
+            <option value="">Use latest dataset</option>
+            {% for dataset in datasets %}
+              <option value="{{ dataset.id }}" {% if dataset.id == latest_dataset_id %}selected{% endif %}>{{ dataset.original_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <form id="strategyForm" class="row g-3 mt-1">
+        {% csrf_token %}
+        <input type="hidden" name="dataset_id" id="backtestDatasetId" value="{{ latest_dataset_id|default:'' }}">
+
+        <div class="col-12 col-md-6">
+          <label class="form-label kinetic-label">Strategy</label>
+          {{ strategy_form.strategy }}
+          <p class="section-copy small mt-2 mb-0" id="strategyHelp">Buy when Short MA > Long MA. Sell when Short MA < Long MA.</p>
+        </div>
+
+        <div class="col-12 col-md-6 strategy-field" data-strategy="ma">
+          <label class="form-label kinetic-label">Short window</label>
+          {{ strategy_form.short_window }}
+        </div>
+        <div class="col-12 col-md-6 strategy-field" data-strategy="ma">
+          <label class="form-label kinetic-label">Long window</label>
+          {{ strategy_form.long_window }}
+        </div>
+        <div class="col-12 col-md-6 strategy-field" data-strategy="rsi">
+          <label class="form-label kinetic-label">RSI period</label>
+          {{ strategy_form.rsi_period }}
+        </div>
+        <div class="col-12 col-md-6 strategy-field" data-strategy="ema">
+          <label class="form-label kinetic-label">EMA window</label>
+          {{ strategy_form.ema_window }}
+        </div>
+
+        <div class="col-12 d-flex align-items-center gap-3 flex-wrap">
+          <button type="button" class="btn btn-kinetic-primary" id="runBacktestBtn">Run Backtest</button>
+          <span class="status-pill">After running, open Results to view profit and trade log.</span>
+          <span class="field-error d-none" id="strategyError"></span>
+        </div>
+      </form>
+    </section>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function getValue(selector) {
+    var element = document.querySelector(selector);
+    return element ? element.value : "";
+  }
+
+  function getCsrfToken() {
+    return getValue('input[name="csrfmiddlewaretoken"]');
+  }
+
+  function updateMetrics(response) {
+    var totalProfit = byId("totalProfit") || byId("resultProfit");
+    var numTrades = byId("numTrades") || byId("resultTrades");
+    var winPercent = byId("resultWinPercent");
+    var capital = byId("resultCapital");
+
+    if (totalProfit) {
+      var totalProfitValue = Number(response.total_profit != null ? response.total_profit : 0);
+      totalProfit.textContent = totalProfitValue < 0 ? ("Loss ₹" + Math.abs(totalProfitValue).toFixed(2)) : ("Profit ₹" + totalProfitValue.toFixed(2));
+    }
+    if (numTrades) {
+      numTrades.textContent = response.num_trades != null ? response.num_trades : 0;
+    }
+    if (winPercent) {
+      winPercent.textContent = ((response.win_percent != null ? response.win_percent : 0)).toFixed(2) + "%";
+    }
+    if (capital) {
+      capital.textContent = "₹" + ((response.initial_balance != null ? response.initial_balance : 100000)).toFixed(2);
+    }
+  }
+
+  function updateTradeTable(trades) {
+    var tableBody = byId("tradeTableBody") || byId("tradeTable");
+    if (!tableBody) {
+      return;
+    }
+
+    var rows = "";
+    for (var index = 0; index < trades.length; index += 1) {
+      var trade = trades[index] || {};
+      var tradeProfit = Number(trade.profit != null ? trade.profit : 0);
+      var isLoss = tradeProfit < 0;
+      var pnlText = isLoss ? ("Loss ₹" + Math.abs(tradeProfit).toFixed(2)) : ("Profit ₹" + tradeProfit.toFixed(2));
+      var pnlColor = isLoss ? "#ff6e84" : "#52f1c3";
+      rows += "<tr>" +
+        "<td>" + (trade.entry_time || "-") + "</td>" +
+        "<td>" + (trade.exit_time || "-") + "</td>" +
+        "<td>" + (trade.buy_price != null ? trade.buy_price : 0) + "</td>" +
+        "<td>" + (trade.sell_price != null ? trade.sell_price : 0) + "</td>" +
+        "<td style=\"color:" + pnlColor + "\">" + pnlText + "</td>" +
+      "</tr>";
+    }
+
+    if (!rows) {
+      rows = '<tr><td colspan="5" class="text-center text-secondary py-4">No trades generated for the selected run.</td></tr>';
+    }
+
+    tableBody.innerHTML = rows;
+  }
+
+  function bindBacktestClick() {
+    console.log("JS LOADED");
+
+    var runBacktestButton = byId("runBacktestBtn");
+    if (!runBacktestButton) {
+      return;
+    }
+
+    if (runBacktestButton.getAttribute("data-backtest-bound") === "1") {
+      return;
+    }
+    runBacktestButton.setAttribute("data-backtest-bound", "1");
+
+    // Capture phase prevents duplicate requests when other handlers are also attached.
+    runBacktestButton.addEventListener("click", function (event) {
+      event.preventDefault();
+      if (event.stopImmediatePropagation) {
+        event.stopImmediatePropagation();
+      }
+
+      console.log("BUTTON CLICKED");
+
+      var datasetId = getValue("#backtestDatasetSelect") || getValue("#backtestDatasetId");
+      if (!datasetId) {
+        alert("Upload a dataset before running backtest.");
+        return;
+      }
+
+      var payload = new URLSearchParams();
+      payload.append("dataset_id", datasetId);
+      payload.append("strategy", getValue("#strategy"));
+      payload.append("short_window", getValue('input[name="short_window"]'));
+      payload.append("long_window", getValue('input[name="long_window"]'));
+      payload.append("rsi_period", getValue('input[name="rsi_period"]'));
+      payload.append("ema_window", getValue('input[name="ema_window"]'));
+      payload.append("csrfmiddlewaretoken", getCsrfToken());
+
+      fetch("/run-backtest/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-CSRFToken": getCsrfToken(),
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        body: payload.toString(),
+        credentials: "same-origin"
+      })
+        .then(function (response) {
+          if (!response.ok) {
+            return response.text().then(function (text) {
+              throw new Error("HTTP " + response.status + " " + text);
+            });
+          }
+          return response.json();
+        })
+        .then(function (response) {
+          console.log("SUCCESS:", response);
+          alert("Backtest successful");
+
+          updateMetrics(response);
+          updateTradeTable(response.trades || []);
+
+          // Results tab should show output and allow trade-log download.
+          window.location.href = "/results-page/";
+        })
+        .catch(function (error) {
+          console.log("ERROR:", error);
+          alert("Backtest failed. Check console.");
+        });
+    }, true);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindBacktestClick);
+  } else {
+    bindBacktestClick();
+  }
+})();
+</script>
+{% endblock %}

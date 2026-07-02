@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Kinetic Observatory | Upload{% endblock %}
+{% block page_title %}Upload{% endblock %}
+{% block content %}
+<div class="row g-4 justify-content-center">
+  <div class="col-12 col-lg-8">
+    <section class="glass-card hero-card">
+      <div class="eyebrow">Step 1 · Upload</div>
+      <h2 class="section-title">Upload OHLCV data (.xlsx only)</h2>
+      <p class="section-copy">
+        Upload your Excel file, then continue to Dashboard to run the backtest.
+      </p>
+      <form id="uploadForm" enctype="multipart/form-data" class="stacked-form mt-4">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label kinetic-label">Dataset label</label>
+          {{ upload_form.label }}
+        </div>
+        <div class="mb-3">
+          <label class="form-label kinetic-label">Excel file (.xlsx)</label>
+          {{ upload_form.dataset_file }}
+        </div>
+        <div class="dropzone" id="excelDropzone">
+          <div class="dropzone-icon">XLSX</div>
+          <div class="dropzone-title">Drag and drop Excel file</div>
+          <div class="dropzone-copy">Required columns: Date, Open, High, Low, Close, Volume</div>
+        </div>
+        <button type="submit" class="btn btn-kinetic-primary w-100 mt-3">Process file</button>
+      </form>
+    </section>
+  </div>
+</div>
+{% endblock %}
