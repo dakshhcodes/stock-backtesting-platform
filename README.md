@@ -17,24 +17,6 @@
 
 ---
 
-## Table of Contents
-
-1. [What Is This Project?](#what-is-this-project)
-2. [Explain Like I Am 5](#explain-like-i-am-5)
-3. [Finance Concepts (Simple + Deep)](#finance-concepts-simple--deep)
-4. [How This App Works Internally](#how-this-app-works-internally)
-5. [Screenshots](#screenshots)
-6. [Run From Scratch (Windows, macOS, Linux)](#run-from-scratch-windows-macos-linux)
-7. [How To Use The App Step-by-Step](#how-to-use-the-app-step-by-step)
-8. [Input File Format](#input-file-format)
-9. [API Routes](#api-routes)
-10. [Project Structure](#project-structure)
-11. [Troubleshooting](#troubleshooting)
-12. [Tech Stack](#tech-stack)
-13. [Future Improvements](#future-improvements)
-
----
-
 ## What Is This Project?
 
 Kinetic Observatory is a Django web app for **strategy backtesting**.
@@ -52,84 +34,39 @@ This project is built for learning, viva/demo, and mini-project submission.
 
 ---
 
-## Explain Like I Am 5
+A Django-based stock backtesting platform for evaluating algorithmic trading strategies using historical market data. The platform supports MA, EMA, and RSI strategies, providing performance analytics, trade logs, and an intuitive web interface.
 
-Imagine this app is a **time machine game**:
+The project was developed as part of an academic software engineering project and demonstrates practical applications of Python, Django, and financial data analysis.
 
-- You give it an old stock history file.
-- You tell it a rule, like:
-	- "Buy when the line goes above another line" (MA/EMA idea)
-	- "Buy when the stock looks tired" (RSI idea)
-- The app plays the past like a video.
-- It writes down every buy/sell in a notebook.
-- Then it tells you: "Did this rule make money or lose money?"
+Features
+Upload historical stock datasets (.xlsx)
+Backtest trading strategies on historical data
+Supports Moving Average (MA), Exponential Moving Average (EMA), and Relative Strength Index (RSI) strategies
+View detailed trade history
+Performance metrics including Profit/Loss, Win Rate, and Total Trades
+Export trade logs as CSV
+Interactive Django dashboard
+Django Admin Panel for managing results
 
-That notebook is your **trade log**.
+Workflow
+Historical Dataset (.xlsx)
+            │
+            ▼
+    Data Validation
+            │
+            ▼
+   Strategy Selection
+            │
+            ▼
+   Backtesting Engine
+            │
+            ▼
+ Performance Analysis
+            │
+            ▼
+ Results Dashboard + CSV Export
 
----
-
-## Finance Concepts (Simple + Deep)
-
-### Backtesting
-
-- Simple: Test your strategy on old data before risking real money.
-- Deep: A deterministic simulation where signals are generated from historical OHLCV candles and converted into executed trades.
-
-### Candle Data (OHLCV)
-
-- **Open**: price at candle start.
-- **High**: highest price in candle.
-- **Low**: lowest price in candle.
-- **Close**: price at candle end.
-- **Volume**: traded quantity.
-
-### Moving Average (MA)
-
-- Simple: Average of recent prices, like smoothing noisy lines.
-- In this app:
-	- Buy signal: short MA > long MA
-	- Sell signal: short MA < long MA
-
-### Exponential Moving Average (EMA)
-
-- Simple: Like MA, but gives more importance to recent prices.
-- In this app:
-	- Buy signal: Close > EMA
-	- Sell signal: Close < EMA
-
-### Relative Strength Index (RSI)
-
-- Simple: A meter from 0 to 100 telling if price moved too fast.
-- Common interpretation:
-	- Below 30 -> oversold area
-	- Above 70 -> overbought area
-- In this app:
-	- Buy signal: RSI < 30
-	- Sell signal: RSI > 70
-
-### Long vs Short
-
-- **Long** means buy first, sell later.
-	- Profit if sell price > buy price.
-- **Short** means sell first, buy later.
-	- Profit if buy-back price < sell-first price.
-
-Important: Current implementation stores and executes **long-side trades** for the built-in strategies.
-
----
-
-## How This App Works Internally
-
-1. Upload `.xlsx` file on Upload page.
-2. File is validated and cleaned (required columns checked, sorted by time).
-3. Cleaned data is saved for latest backtest run.
-4. Dashboard sends strategy config using AJAX.
-5. Django backtesting service generates trades.
-6. Result and trades are saved in SQLite.
-7. Results page reads latest result and shows metrics + trade table.
-8. CSV export downloads the trade log.
-
----
+ 
 
 ## Screenshots
 
@@ -166,6 +103,90 @@ Important: Current implementation stores and executes **long-side trades** for t
 ![Admin Backtest Results](ui%20screenshots/djanog%20administration%20superuser%20backtest%20results.png)
 
 ---
+Tech Stack:
+
+Backend
+Python
+Django
+Data Processing
+Pandas
+NumPy
+Database
+SQLite
+Frontend
+HTML
+CSS
+Bootstrap 5
+JavaScript
+jQuery AJAX
+Installation:
+
+git clone https://github.com/dakshhcodes/stock-backtesting-platform.git
+
+cd stock-backtesting-platform
+
+python -m venv venv
+
+# Windows
+venv\Scripts\activate
+
+# macOS/Linux
+source venv/bin/activate
+
+pip install -r requirements.txt
+
+cd backend/core
+
+python manage.py migrate
+
+python manage.py runserver
+
+Visit:
+http://127.0.0.1:8000/
+
+Usage:
+
+Upload an OHLCV Excel dataset.
+Select a trading strategy (MA, EMA, or RSI).
+Configure strategy parameters.
+Run the backtest.
+Analyze performance metrics.
+Export the trade history as a CSV file.
+
+Project Structure:
+
+backend/
+    core/
+        trading/
+        templates/
+        static/
+
+README.md
+requirements.txt
+
+My Contributions:
+
+Developed backend functionality using Django.
+Implemented technical indicator strategies (MA, EMA, RSI).
+Built data processing and backtesting logic.
+Developed dashboard and results pages.
+Performed testing and debugging.
+Contributed to project documentation.
+
+Future Improvements
+
+Live market data integration
+Portfolio optimization
+Interactive stock price charts
+Multiple strategy comparison
+Additional technical indicators
+Risk management metrics
+
+License
+
+Academic Project
+
+
 
 ## Run From Scratch (Windows, macOS, Linux)
 
